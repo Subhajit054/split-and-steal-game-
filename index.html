@@ -70,6 +70,7 @@
 
         .briefcase.open {
             transform: rotateX(180deg) scale(1.1);
+            cursor: default;
         }
 
         .options {
@@ -90,7 +91,6 @@
 
         .option-btn {
             padding: 20px 40px;
-            margin: 0;
             border: none;
             border-radius: 30px;
             cursor: pointer;
@@ -104,6 +104,7 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
             z-index: 3;
             transform: rotateX(180deg);
+            pointer-events: auto;
         }
 
         .option-btn:before {
@@ -113,12 +114,7 @@
             left: -100%;
             width: 100%;
             height: 100%;
-            background: linear-gradient(
-                90deg,
-                transparent,
-                rgba(255,255,255,0.4),
-                transparent
-            );
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
             transition: 0.5s;
         }
 
@@ -173,14 +169,8 @@
         }
 
         @keyframes confetti-fall {
-            0% {
-                transform: translateY(-100vh) rotate(0deg);
-                opacity: 1;
-            }
-            100% {
-                transform: translateY(100vh) rotate(720deg);
-                opacity: 0;
-            }
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
         }
 
         @keyframes shine {
@@ -242,8 +232,8 @@
         <div class="player" id="player1">
             <div class="briefcase" onclick="startGame(1)">
                 <div class="options">
-                    <button class="option-btn split-btn" onclick="event.stopPropagation(); makeChoice(1, 'split')">SPLIT</button>
-                    <button class="option-btn steal-btn" onclick="event.stopPropagation(); makeChoice(1, 'steal')">STEAL</button>
+                    <button class="option-btn split-btn" onclick="makeChoice(1, 'split', event)">SPLIT</button>
+                    <button class="option-btn steal-btn" onclick="makeChoice(1, 'steal', event)">STEAL</button>
                 </div>
             </div>
             <h2>Player 1 👨💼</h2>
@@ -252,8 +242,8 @@
         <div class="player" id="player2">
             <div class="briefcase" onclick="startGame(2)">
                 <div class="options">
-                    <button class="option-btn split-btn" onclick="event.stopPropagation(); makeChoice(2, 'split')">SPLIT</button>
-                    <button class="option-btn steal-btn" onclick="event.stopPropagation(); makeChoice(2, 'steal')">STEAL</button>
+                    <button class="option-btn split-btn" onclick="makeChoice(2, 'split', event)">SPLIT</button>
+                    <button class="option-btn steal-btn" onclick="makeChoice(2, 'steal', event)">STEAL</button>
                 </div>
             </div>
             <h2>Player 2 👩💼</h2>
@@ -313,6 +303,8 @@
         function startTimer() {
             const timerElement = document.querySelector('.timer');
             timerElement.style.opacity = '1';
+            timeLeft = 10;
+            timerElement.textContent = timeLeft;
             
             timerInterval = setInterval(() => {
                 timeLeft--;
@@ -331,24 +323,28 @@
             });
         }
 
-        function makeChoice(player, choice) {
-            if (!choices[player]) {
-                choices[player] = choice;
-                const briefcase = document.querySelector(`#player${player} .briefcase`);
-                briefcase.style.background = choice === 'split' 
-                    ? 'radial-gradient(circle at 30% 30%, #4CAF50, #45a049)' 
-                    : 'radial-gradient(circle at 30% 30%, #f44336, #d32f2f)';
-                
-                briefcase.querySelectorAll('.option-btn').forEach(btn => {
-                    btn.style.display = 'none';
-                });
-            }
+        function makeChoice(player, choice, event) {
+            event.stopPropagation();
+            if (!gameStarted || choices[player]) return;
 
-            if (Object.keys(choices).length === 2) showResults();
+            choices[player] = choice;
+            const briefcase = document.querySelector(`#player${player} .briefcase`);
+            briefcase.style.background = choice === 'split' 
+                ? 'radial-gradient(circle at 30% 30%, #4CAF50, #45a049)' 
+                : 'radial-gradient(circle at 30% 30%, #f44336, #d32f2f)';
+            
+            briefcase.querySelectorAll('.option-btn').forEach(btn => {
+                btn.style.opacity = '0';
+                btn.style.pointerEvents = 'none';
+            });
+
+            if (Object.keys(choices).length === 2) {
+                clearInterval(timerInterval);
+                showResults();
+            }
         }
 
         function showResults() {
-            clearInterval(timerInterval);
             playSound('revealSound');
             
             setTimeout(() => {
@@ -385,27 +381,32 @@
         function resetGame() {
             choices = {};
             gameStarted = false;
-            timeLeft = 10;
             
             document.body.style.background = 'linear-gradient(45deg, #2c3e50, #3498db)';
             document.querySelectorAll('.briefcase').forEach(b => {
                 b.classList.remove('open');
                 b.style.background = 'radial-gradient(circle at 30% 30%, gold, darkgoldenrod)';
                 b.querySelectorAll('.option-btn').forEach(btn => {
-                    btn.style.display = 'inline-block';
+                    btn.style.opacity = '1';
+                    btn.style.pointerEvents = 'auto';
                 });
             });
             
             document.querySelector('.result-screen').classList.remove('active');
             document.querySelector('.timer').style.opacity = '0';
-            document.querySelector('.timer').textContent = '10';
+            document.querySelector('.host').classList.remove('active');
             document.getElementById('celebration').innerHTML = '';
+            
+            clearInterval(timerInterval);
+            startTimer();
         }
 
         function playSound(id) {
             const sound = document.getElementById(id);
-            sound.currentTime = 0;
-            sound.play();
+            if (sound) {
+                sound.currentTime = 0;
+                sound.play();
+            }
         }
     </script>
 </body>
