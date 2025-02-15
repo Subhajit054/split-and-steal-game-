@@ -49,6 +49,7 @@
             position: relative;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transform-style: preserve-3d;
         }
 
         .briefcase:before {
@@ -78,11 +79,12 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%) rotateX(180deg);
-            backface-visibility: hidden;
+            transform: translate(-50%, -50%);
+            backface-visibility: visible;
             flex-direction: column;
             gap: 20px;
             z-index: 2;
+            transform-style: preserve-3d;
         }
 
         .briefcase.open .options {
@@ -104,7 +106,11 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.3);
             z-index: 3;
             transform: rotateX(180deg);
-            pointer-events: auto;
+            backface-visibility: visible;
+        }
+
+        .briefcase.open .option-btn {
+            transform: rotateX(0deg);
         }
 
         .option-btn:before {
@@ -329,14 +335,18 @@
 
             choices[player] = choice;
             const briefcase = document.querySelector(`#player${player} .briefcase`);
+            const buttons = briefcase.querySelectorAll('.option-btn');
+            
+            buttons.forEach(btn => {
+                if (btn.textContent.toLowerCase() !== choice) {
+                    btn.style.opacity = '0';
+                    btn.style.pointerEvents = 'none';
+                }
+            });
+
             briefcase.style.background = choice === 'split' 
                 ? 'radial-gradient(circle at 30% 30%, #4CAF50, #45a049)' 
                 : 'radial-gradient(circle at 30% 30%, #f44336, #d32f2f)';
-            
-            briefcase.querySelectorAll('.option-btn').forEach(btn => {
-                btn.style.opacity = '0';
-                btn.style.pointerEvents = 'none';
-            });
 
             if (Object.keys(choices).length === 2) {
                 clearInterval(timerInterval);
