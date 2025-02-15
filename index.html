@@ -1,1 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Split or Steal - Ultimate Showdown</title>
+    <style>
+        :root {
+            --win-color: #4CAF50;
+            --lose-color: #f44336;
+            --neutral-color: #2196F3;
+        }
 
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: linear-gradient(45deg, #2c3e50, #3498db);
+            font-family: 'Arial', sans-serif;
+            color: white;
+            overflow: hidden;
+            transition: background 0.5s;
+        }
+
+        .container {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-top: 50px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .player {
+            text-align: center;
+            perspective: 1000px;
+        }
+
+        .briefcase {
+            width: 250px;
+            height: 180px;
+            background: radial-gradient(circle at 30% 30%, gold, darkgoldenrod);
+            border: 5px solid rgba(0,0,0,0.2);
+            border-radius: 15px;
+            margin: 20px;
+            cursor: pointer;
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .briefcase:before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.2), transparent);
+            transform: rotate(45deg);
+            animation: shine 3s infinite;
+        }
+
+        .briefcase:hover {
+            transform: scale(1.05) rotate(-2deg);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+        }
+
+        .briefcase.open {
+            transform: rotateX(180deg) scale(1.1);
+        }
+
+        .options {
+            display: none;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotateX(180deg);
+            backface-visibility: hidden;
+        }
+
+        .option-btn {
+            padding: 20px 40px;
+            margin: 15px;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 20px;
+            font-weight: bold;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .option-btn:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255,255,255,0.4),
+                transparent
+            );
+            transition: 0.5s;
+        }
+
+        .option-btn:hover:before {
+            left: 100%;
+        }
+
+        .split-btn {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+        }
+
+        .steal-btn {
+            background: linear-gradient(45deg, #f44336, #d32f2f);
+            color: white;
+        }
+
+        .result-screen {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            background: rgba(0,0,0,0.95);
+            padding: 40px;
+            border-radius: 25px;
+            text-align: center;
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            z-index: 1000;
+            box-shadow: 0 0 50px rgba(0,0,0,0.5);
+        }
+
+        .result-screen.active {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .celebration {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #fff;
+            animation: confetti-fall 3s linear infinite;
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes shine {
+            0% { transform: rotate(45deg) translateX(-150%); }
+            100% { transform: rotate(45deg) translateX(150%); }
+        }
+
+        .prize-display {
+            font-size: 32px;
+            margin: 30px;
+            text-shadow: 0 0 20px rgba(255,255,255,0.5);
+            animation: glow 2s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { text-shadow: 0 0 20px rgba(255,255,255,0.5); }
+            50% { text-shadow: 0 0 40px rgba(255,255,255,0.8); }
+        }
+
+        .timer {
+            font-size: 50px;
+            color: #ffd700;
+            text-shadow: 0 0 20px #ffd700;
+            opacity: 0;
+            padding: 20px;
+            border: 3px solid #ffd700;
+            border-radius: 50%;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.3);
+        }
+
+        .host {
+            position: fixed;
+            bottom: -100px;
+            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+        }
+
+        .host.active {
+            bottom: 20px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="prize-display">🏆 Total Prize: $100,000 🏆</div>
+    <div class="timer">10</div>
+    
+    <div class="container">
+        <div class="player" id="player1">
+            <div class="briefcase" onclick="startGame(1)">
+                <div class="options">
+                    <button class="option-btn split-btn" onclick="makeChoice(1, 'split')">SPLIT</button>
+                    <button class="option-btn steal-btn" onclick="makeChoice(1, 'steal')">STEAL</button>
+                </div>
+            </div>
+            <h2>Player 1 👨💼</h2>
+        </div>
+
+        <div class="player" id="player2">
+            <div class="briefcase" onclick="startGame(2)">
+                <div class="options">
+                    <button class="option-btn split-btn" onclick="makeChoice(2, 'split')">SPLIT</button>
+                    <button class="option-btn steal-btn" onclick="makeChoice(2, 'steal')">STEAL</button>
+                </div>
+            </div>
+            <h2>Player 2 👩💼</h2>
+        </div>
+    </div>
+
+    <div class="host">
+        <img src="host.png" alt="Host" style="height: 250px;">
+    </div>
+
+    <div class="result-screen">
+        <h2 class="result-text"></h2>
+        <button class="option-btn" onclick="resetGame()" style="background: #2196F3;">Play Again 🔄</button>
+    </div>
+
+    <div class="celebration" id="celebration"></div>
+
+    <audio id="suspenseSound" src="suspense.mp3"></audio>
+    <audio id="revealSound" src="reveal.mp3"></audio>
+    <audio id="winSound" src="win.mp3"></audio>
+    <audio id="loseSound" src="lose.mp3"></audio>
+
+    <script>
+        let choices = {};
+        let gameStarted = false;
+        let timeLeft = 10;
+        let timerInterval;
+
+        function createConfetti() {
+            const celebration = document.getElementById('celebration');
+            for (let i = 0; i < 100; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.animationDelay = Math.random() * 2 + 's';
+                confetti.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 50%)`;
+                confetti.style.width = Math.random() * 10 + 5 + 'px';
+                confetti.style.height = confetti.style.width;
+                celebration.appendChild(confetti);
+            }
+        }
+
+        function startGame(player) {
+            if (!gameStarted) {
+                gameStarted = true;
+                document.body.style.background = 'linear-gradient(45deg, #1a237e, #0d47a1)';
+                document.querySelectorAll('.briefcase').forEach(b => {
+                    b.classList.add('open');
+                    b.querySelector('.options').style.display = 'flex';
+                });
+                document.querySelector('.host').classList.add('active');
+                startTimer();
+                playSound('suspenseSound');
+            }
+        }
+
+        function startTimer() {
+            const timerElement = document.querySelector('.timer');
+            timerElement.style.opacity = '1';
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerElement.textContent = timeLeft;
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    handleTimeOut();
+                }
+            }, 1000);
+        }
+
+        function handleTimeOut() {
+            [1, 2].forEach(player => {
+                if (!choices[player]) makeChoice(player, 'split');
+            });
+        }
+
+        function makeChoice(player, choice) {
+            if (!choices[player]) {
+                choices[player] = choice;
+                document.querySelectorAll(`#player${player} .option-btn`).forEach(btn => {
+                    btn.style.display = 'none';
+                });
+                const briefcase = document.querySelector(`#player${player} .briefcase`);
+                briefcase.style.background = choice === 'split' 
+                    ? 'radial-gradient(circle at 30% 30%, #4CAF50, #45a049)' 
+                    : 'radial-gradient(circle at 30% 30%, #f44336, #d32f2f)';
+            }
+
+            if (Object.keys(choices).length === 2) showResults();
+        }
+
+        function showResults() {
+            clearInterval(timerInterval);
+            playSound('revealSound');
+            
+            setTimeout(() => {
+                const [p1, p2] = [choices[1], choices[2]];
+                let result, bgColor;
+
+                if (p1 === 'split' && p2 === 'split') {
+                    result = "🎉 Both split! Each gets $50,000! 🎊";
+                    bgColor = 'linear-gradient(45deg, #4CAF50, #388E3C)';
+                    createConfetti();
+                    playSound('winSound');
+                } else if (p1 === 'steal' && p2 === 'steal') {
+                    result = "💥 Both stole! No one wins! 😭";
+                    bgColor = 'linear-gradient(45deg, #f44336, #d32f2f)';
+                    playSound('loseSound');
+                } else if (p1 === 'steal') {
+                    result = "🤑 Player 1 steals $100,000! 💰";
+                    bgColor = 'linear-gradient(45deg, #FF9800, #F57C00)';
+                    createConfetti();
+                    playSound('winSound');
+                } else {
+                    result = "🤑 Player 2 steals $100,000! 💰";
+                    bgColor = 'linear-gradient(45deg, #FF9800, #F57C00)';
+                    createConfetti();
+                    playSound('winSound');
+                }
+
+                document.body.style.background = bgColor;
+                document.querySelector('.result-text').innerHTML = result;
+                document.querySelector('.result-screen').classList.add('active');
+            }, 2000);
+        }
+
+        function resetGame() {
+            choices = {};
+            gameStarted = false;
+            timeLeft = 10;
+            
+            document.body.style.background = 'linear-gradient(45deg, #2c3e50, #3498db)';
+            document.querySelectorAll('.briefcase').forEach(b => {
+                b.classList.remove('open');
+                b.style.background = 'radial-gradient(circle at 30% 30%, gold, darkgoldenrod)';
+                b.querySelector('.options').style.display = 'none';
+            });
+            
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.style.display = 'inline-block';
+            });
+            
+            document.querySelector('.result-screen').classList.remove('active');
+            document.querySelector('.timer').style.opacity = '0';
+            document.querySelector('.timer').textContent = '10';
+            document.getElementById('celebration').innerHTML = '';
+        }
+
+        function playSound(id) {
+            const sound = document.getElementById(id);
+            sound.currentTime = 0;
+            sound.play();
+        }
+    </script>
+</body>
+</html>
